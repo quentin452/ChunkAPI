@@ -26,10 +26,7 @@ import com.falsepattern.chunk.internal.DataRegistryImpl;
 import lombok.val;
 import org.apache.logging.log4j.Level;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.Overwrite;
 
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
@@ -53,13 +50,9 @@ public abstract class AnvilChunkLoaderMixin {
      *
      * @author FalsePattern
      * @reason Replace functionality
-     * @implNote Inject-cancel instead of overwrite for compat with Metaworlds-Mixins
      */
-    @Inject(method = "writeChunkToNBT",
-            at = @At("HEAD"),
-            cancellable = true,
-            require = 1)
-    private void writeChunkToNBT(Chunk chunk, World world, NBTTagCompound nbt, CallbackInfo ci) {
+    @Overwrite
+    private void writeChunkToNBT(Chunk chunk, World world, NBTTagCompound nbt) {
         nbt.setByte("V", (byte) 1);
         nbt.setInteger("xPos", chunk.xPosition);
         nbt.setInteger("zPos", chunk.zPosition);
@@ -69,7 +62,6 @@ public abstract class AnvilChunkLoaderMixin {
         writeSubChunks(chunk, nbt);
         writeCustomData(chunk, nbt);
         writeEntities(chunk, world, nbt);
-        ci.cancel();
     }
 
     /**
@@ -78,13 +70,9 @@ public abstract class AnvilChunkLoaderMixin {
      *
      * @author FalsePattern
      * @reason Replace functionality
-     * @implNote Inject-cancel instead of overwrite for compat with Metaworlds-Mixins
      */
-    @Inject(method = "readChunkFromNBT",
-            at = @At("HEAD"),
-            cancellable = true,
-            require = 1)
-    private void readChunkFromNBT(World world, NBTTagCompound nbt, CallbackInfoReturnable<Chunk> cir) {
+    @Overwrite
+    private Chunk readChunkFromNBT(World world, NBTTagCompound nbt) {
         int x = nbt.getInteger("xPos");
         int z = nbt.getInteger("zPos");
         Chunk chunk = new Chunk(world, x, z);
@@ -94,7 +82,7 @@ public abstract class AnvilChunkLoaderMixin {
         readCustomData(chunk, nbt);
 
         // End this method here and split off entity loading to another method
-        cir.setReturnValue(chunk);
+        return chunk;
     }
 
     private void readCustomData(Chunk chunk, NBTTagCompound nbt) {
